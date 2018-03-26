@@ -4,29 +4,44 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
- public class SmsReceiver extends BroadcastReceiver {
-  private static final String Tag="Message Receivied";
 
+
+public class SmsReceiver extends BroadcastReceiver {
+  private static final String TAG="xyzd22";
+     @Override
      public void onReceive(Context context, Intent intent) {
-         final Bundle pdubundle = intent.getExtras();
+         Log.d(TAG,"onReceiveUbiServer");
+         Bundle bundle = intent.getExtras();
+         SmsMessage[] smsm = null;
+         String sms_str ="";
+         if(bundle!=null) {
+             Object[] pdus = (Object[]) bundle.get("pdus");
 
-         Object[]  pdus=(Object[])pdubundle.get("pdus");
+             smsm = new SmsMessage[pdus.length];
+             for (int i = 0; i < smsm.length; i++) {
+                 smsm[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
+                /*sms_str+=smsm[i].getOriginatingAddress();
+                sms_str+=" : ";*/
+                 //sms_str += "\r\nMessage: ";
+                 sms_str += smsm[i].getMessageBody().toString();
+                 //sms_str+= "\r\n";
 
-         SmsMessage message=SmsMessage.createFromPdu((byte[])pdus[0]);
-         Toast.makeText(context,"sms rec from"+message.getOriginatingAddress()+message.getMessageBody(),Toast.LENGTH_LONG).show();
+                 String Sender = smsm[i].getOriginatingAddress();
+                 //Check here sender is yours
+                 Intent smsIntent = new Intent("otp");
+                 smsIntent.putExtra("sender", Sender);
+                 smsIntent.putExtra("message", sms_str);
 
-        // tv.setText(add + num);
-         Intent si=new Intent(context ,MainActivity.class);
-         si.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-         si.putExtra("msgnum",message.getOriginatingAddress());
-         si.putExtra("msg",message.getMessageBody());
-         context.startActivity(si);
-         Toast.makeText(context,"sms rec from"+message.getOriginatingAddress()+message.getMessageBody(),Toast.LENGTH_LONG).show();
+                 LocalBroadcastManager.getInstance(context).sendBroadcast(smsIntent);
 
+             }
+         }
      }
 }
