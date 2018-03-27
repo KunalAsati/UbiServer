@@ -162,13 +162,13 @@ Double latitude,longitude;
                 final String sender = intent.getStringExtra("sender");
                 String s = message;
                 String[] words = s.split("#");
-                for (int i = 0; i < words.length; i++) {
+               /* for (int i = 0; i < words.length; i++) {
                     // You may want to check for a non-word character before blindly
                     // performing a replacement
                     // It may also be necessary to adjust the character class
                     words[i] = words[i].replaceAll("[^\\w]", "");
                     Log.d(TAG,"words["+i+"]="+words[i]);
-                }
+                }*/
                 if(message.charAt(0)!='#')
                 {
                     fairPriceProcessing(message,sender);
@@ -216,6 +216,7 @@ Double latitude,longitude;
                     // Prompt the user for permission.
 
                     if (latitude > 28.00) {
+                        Log.d(TAG,"north child, latitude = "+latitude);
                         mRegionRef = mAddressRef.child("north");
                     } else if (latitude > 14.00) {
                         if (longitude < 80.00) {
@@ -296,7 +297,7 @@ Double latitude,longitude;
     private String formSMS(int msp,String address)
     {
         String sms;
-        sms="#ubi#"+msp+"#"+address;
+        sms="#ubimsp#"+msp+"#"+address;
         Log.d(TAG,"returned SMS = "+sms);
         return sms;
     }
