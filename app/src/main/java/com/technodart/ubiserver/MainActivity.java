@@ -19,6 +19,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.SmsManager;
 import android.text.Html;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -42,7 +43,8 @@ public class MainActivity extends AppCompatActivity {
     Button sendBtn;
     EditText txtphoneNo;
     EditText txtMessage;
-    String phoneNo, message, msgnum, add, sendMessage, commodity, address, sms;
+    String phoneNo, message, msgnum, add, sendMessage, commodity, address, sms, cityField, updatedField, detailsField, currentTemperatureField, humidity_field, pressure_field, textWeather;
+    Spanned weatherIcon;
    // String ;
     long msg, tempamt;
     DatabaseReference databaseproduct;
@@ -132,6 +134,7 @@ Double latitude,longitude;
 
     }
 
+
     @Override
     public void onRequestPermissionsResult(int requestCode,String permissions[], int[] grantResults) {
         switch (requestCode) {
@@ -174,9 +177,28 @@ Double latitude,longitude;
                     fairPriceProcessing(message,sender);
 
                 }
-                else if(words[1].equalsIgnoreCase("ubiweather"))
-                {
+                else if(words[1].equalsIgnoreCase("ubiweather")) {
+                    latitude = Double.parseDouble(words[2]);
+                    longitude = Double.parseDouble(words[3]);
+                    Function.placeIdTask asyncTask = new Function.placeIdTask(new Function.AsyncResponse() {
+                        public void processFinish(String weather_city, String weather_description, String weather_temperature, String weather_humidity, String weather_pressure, String weather_updatedOn, String weather_iconText, String sun_rise) {
 
+                            cityField = weather_city;
+                            updatedField = weather_updatedOn;
+                            detailsField = weather_description;
+                            currentTemperatureField = weather_temperature;
+                            humidity_field = "Humidity: " + weather_humidity;
+                            pressure_field = "Pressure: " + weather_pressure;
+                            weatherIcon = Html.fromHtml(weather_iconText);
+                            textWeather=weather_iconText;
+
+                        }
+
+                    });
+
+                    asyncTask.execute(Double.toString(latitude), Double.toString(longitude)); //  asyncTask.execute("Latitude", "Longitude")
+                    sms=formSMS(cityField,updatedField,detailsField,currentTemperatureField,humidity_field,pressure_field,textWeather);
+                    sendSMS(sender,sms);
                 }
                 else {
                     switch (words[2]) {
@@ -302,6 +324,13 @@ Double latitude,longitude;
     {
         String sms;
         sms="#ubimsp#"+msp+"#"+address;
+        Log.d(TAG,"returned SMS = "+sms);
+        return sms;
+    }
+    private String formSMS(String cityField,String updatedField,String detailsField,String currentTemperatureField,String humidity_field,String pressure_field,String textWeather)
+    {
+        String sms;
+        sms="#ubiweather#"+cityField+"#"+updatedField+"#"+detailsField+"#"+currentTemperatureField+"#"+humidity_field+"#"+pressure_field+"#"+textWeather;
         Log.d(TAG,"returned SMS = "+sms);
         return sms;
     }
