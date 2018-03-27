@@ -118,12 +118,14 @@ Double latitude,longitude;
     @SuppressWarnings("deprecation")
     private void sendSMS(String phoneNumber, String message)
     {
+        Log.d(TAG,"sendSMS called");
         if(message==null)
         {
+            Log.d(TAG,"message is null");
             return;
         }
-        Log.v("phoneNumber",phoneNumber);
-        Log.v("message",message);
+        Log.d(TAG,phoneNumber);
+        Log.d(TAG,message);
        // Log.v("i",Integer.toString(i));
         PendingIntent pi = PendingIntent.getActivity(this, 0,
                 new Intent(this,Dummy.class), 0);
@@ -133,7 +135,25 @@ Double latitude,longitude;
        // ++i;
 
     }
+    private void sendLongSMS(String number,String sms)
+    {
+        String SENT = "SMS_SENT";
+        String DELIVERED = "SMS_DELIVERED";
+        SmsManager smsManager = SmsManager.getDefault();
+        ArrayList<String> parts = smsManager.divideMessage(message);
+        PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
+                new Intent(SENT), 0);
 
+        PendingIntent deliveredPI = PendingIntent.getBroadcast(this, 0,
+                new Intent(DELIVERED), 0);
+        ArrayList<PendingIntent> sendList = new ArrayList<>();
+        sendList.add(sentPI);
+
+        ArrayList<PendingIntent> deliverList = new ArrayList<>();
+        deliverList.add(deliveredPI);
+
+        smsManager.sendMultipartTextMessage(number, null, parts, sendList, deliverList);
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,String permissions[], int[] grantResults) {
@@ -161,6 +181,7 @@ Double latitude,longitude;
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equalsIgnoreCase("otp")) {
+                Log.d(TAG,"onReceive called");
                 final String message = intent.getStringExtra("message");
                 final String sender = intent.getStringExtra("sender");
                 String s = message;
@@ -178,12 +199,16 @@ Double latitude,longitude;
 
                 }
                 else if(words[1].equalsIgnoreCase("ubiweather")) {
+                    Log.d(TAG,"else if called");
                     latitude = Double.parseDouble(words[2]);
                     longitude = Double.parseDouble(words[3]);
                     Function.placeIdTask asyncTask = new Function.placeIdTask(new Function.AsyncResponse() {
                         public void processFinish(String weather_city, String weather_description, String weather_temperature, String weather_humidity, String weather_pressure, String weather_updatedOn, String weather_iconText, String sun_rise) {
 
                             cityField = weather_city;
+                            if(cityField==null) {
+                                Log.d(TAG, "cityField here is null");
+                            }
                             updatedField = weather_updatedOn;
                             detailsField = weather_description;
                             currentTemperatureField = weather_temperature;
@@ -191,14 +216,15 @@ Double latitude,longitude;
                             pressure_field = "Pressure: " + weather_pressure;
                             weatherIcon = Html.fromHtml(weather_iconText);
                             textWeather=weather_iconText;
-
+                            sms=formSMS(cityField,updatedField,detailsField,currentTemperatureField,humidity_field,pressure_field,textWeather);
+                            sendSMS(sender,sms);
                         }
 
                     });
-
+                    Log.d(TAG,"async called");
                     asyncTask.execute(Double.toString(latitude), Double.toString(longitude)); //  asyncTask.execute("Latitude", "Longitude")
-                    sms=formSMS(cityField,updatedField,detailsField,currentTemperatureField,humidity_field,pressure_field,textWeather);
-                    sendSMS(sender,sms);
+                   /* sms=formSMS(cityField,updatedField,detailsField,currentTemperatureField,humidity_field,pressure_field,textWeather);
+                    sendSMS(sender,sms);*/
                 }
                 else {
                     switch (words[2]) {
@@ -322,6 +348,7 @@ Double latitude,longitude;
     }
     private String formSMS(int msp,String address)
     {
+
         String sms;
         sms="#ubimsp#"+msp+"#"+address;
         Log.d(TAG,"returned SMS = "+sms);
@@ -329,8 +356,9 @@ Double latitude,longitude;
     }
     private String formSMS(String cityField,String updatedField,String detailsField,String currentTemperatureField,String humidity_field,String pressure_field,String textWeather)
     {
+        Log.d(TAG,"formSMS for weather called");
         String sms;
-        sms="#ubiweather#"+cityField+"#"+updatedField+"#"+detailsField+"#"+currentTemperatureField+"#"+humidity_field+"#"+pressure_field+"#"+textWeather;
+        sms="#ubiweather#"+cityField+"#"+detailsField+"#"+currentTemperatureField+"#"+humidity_field;
         Log.d(TAG,"returned SMS = "+sms);
         return sms;
     }
