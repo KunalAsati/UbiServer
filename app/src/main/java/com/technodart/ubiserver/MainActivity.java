@@ -1,7 +1,9 @@
 package com.technodart.ubiserver;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import android.accounts.Account;
 import android.app.Activity;
@@ -15,6 +17,9 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.SmsManager;
@@ -43,13 +48,14 @@ public class MainActivity extends AppCompatActivity {
     Button sendBtn;
     EditText txtphoneNo;
     EditText txtMessage;
-    String phoneNo, message, msgnum, add, sendMessage, commodity, address, sms, cityField, updatedField, detailsField, currentTemperatureField, humidity_field, pressure_field, textWeather;
+    String pincode,state,phoneNo, message, msgnum, add, sendMessage, commodity, address, sms, cityField, updatedField, detailsField, currentTemperatureField, humidity_field, pressure_field, textWeather;
     Spanned weatherIcon;
    // String ;
     long msg, tempamt;
     DatabaseReference databaseproduct;
     PriceDetail dt;
    // String ;
+   int flag = 0;
     char one;
     DatabaseReference mRootRef = FirebaseDatabase.getInstance().getReference();
     DatabaseReference mMSPRef = mRootRef.child("msp");
@@ -57,11 +63,12 @@ public class MainActivity extends AppCompatActivity {
     DatabaseReference mAddressRef=mMSPRef.child("address");
     DatabaseReference mRegionRef;
     DatabaseReference mCommodityRef;
-    int msp;
+    int msp, p;
 Double latitude,longitude;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        p=0;
         setContentView(R.layout.activity_main);
         LocalBroadcastManager.getInstance(this).
                 registerReceiver(receiver, new IntentFilter("otp"));
@@ -118,6 +125,7 @@ Double latitude,longitude;
     @SuppressWarnings("deprecation")
     private void sendSMS(String phoneNumber, String message)
     {
+        flag=1;
         Log.d(TAG,"sendSMS called");
         if(message==null)
         {
@@ -185,6 +193,9 @@ Double latitude,longitude;
                 final String message = intent.getStringExtra("message");
                 final String sender = intent.getStringExtra("sender");
                 String s = message;
+                if(!s.contains("ubi")){
+                    return;
+                }
                 String[] words = s.split("#");
                /* for (int i = 0; i < words.length; i++) {
                     // You may want to check for a non-word character before blindly
@@ -193,8 +204,10 @@ Double latitude,longitude;
                     words[i] = words[i].replaceAll("[^\\w]", "");
                     Log.d(TAG,"words["+i+"]="+words[i]);
                 }*/
-                if(message.charAt(0)!='#')
+
+                if(words[1].equalsIgnoreCase("ubimarket"))
                 {
+
                     fairPriceProcessing(message,sender);
 
                 }
@@ -226,7 +239,7 @@ Double latitude,longitude;
                    /* sms=formSMS(cityField,updatedField,detailsField,currentTemperatureField,humidity_field,pressure_field,textWeather);
                     sendSMS(sender,sms);*/
                 }
-                else {
+                else if(words[1].equalsIgnoreCase("ubimsp")){
                     switch (words[2]) {
                         case "Gram":
                             commodity = "Gram";
@@ -252,6 +265,7 @@ Double latitude,longitude;
                     // Toast.makeText(this.getContext(), "You are connected to Internet", Toast.LENGTH_SHORT).show();
 
                     mCommodityRef = mPriceRef.child(commodity);
+
                     mCommodityRef.addValueEventListener(new ValueEventListener() {
                         @Override
                         public void onDataChange(DataSnapshot dataSnapshot) {
@@ -279,13 +293,16 @@ Double latitude,longitude;
                     } else {
                         mRegionRef = mAddressRef.child("south");
                     }
+                    flag=0;
                     mRegionRef.addValueEventListener(new ValueEventListener() {
                         @Override
                         public void onDataChange(DataSnapshot dataSnapshot) {
                             address = dataSnapshot.getValue(String.class);
                             Log.d(TAG, "msp and address at this point : " + msp + address);
                             sms = formSMS(msp, address);
-                            sendSMS(sender, sms);
+                            if(flag==0) {
+                                sendSMS(sender, sms);
+                            }
                         }
 
                         @Override
@@ -298,43 +315,78 @@ Double latitude,longitude;
                     Log.d(TAG, "before sending sms = " + sms);
                     //sendSMS(sender,sms);
                 }
+                else{
+                    sendSMS(sender, "#ubierror");
+
+                }
                 }
 
         }
     };
     private void fairPriceProcessing(String message,String sender)
     {
-        add = message;
-        msgnum = sender;
+        p=1;
+        add = sender;
+        state = "Bihar";
+        pincode= "411008";
+       // tv.setText(add + msgnum);
 
-        TextView tv = (TextView) findViewById(R.id.tv1);
-        tv.setText(add + msgnum);
-        sendMessage = "#ubi";
+        String[] words = message.split("#");
+
         dt = new PriceDetail();
-        databaseproduct = FirebaseDatabase.getInstance().getReference().child("fareprice").child(msgnum);
 
+
+            //Geocoder for state and city
+
+        Geocoder geocoder = new Geocoder(this, Locale.ENGLISH);
+
+        try {
+            List<Address> addresses = geocoder.getFromLocation(Double.valueOf(words[2]), Double.valueOf(words[3]), 1);
+
+            if (addresses.size() > 0) {
+
+
+
+                //     city.setText(addresses.get(0).getLocality());
+                state = addresses.get(0).getAdminArea();
+                pincode =addresses.get(0).getPostalCode();
+                //    addr.setText(addresses.get(0).getAddressLine(0));
+
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Toast.makeText(this, pincode+state, Toast.LENGTH_SHORT).show();
+        databaseproduct = FirebaseDatabase.getInstance().getReference().child("fareprice").child(state);
+
+        sendMessage ="#ubimarket";
+        flag=0;
         databaseproduct.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot ) {
                 int i =0;
+                if(flag==1){
+                    return;
+                }
                 for(DataSnapshot gr:dataSnapshot.getChildren()) {
                     // String useridstr = usrid.getKey();
                     i++;
                     dt = gr.getValue(PriceDetail.class);
                     if (dt != null) {
+                        flag=1;
                         Toast.makeText(MainActivity.this ,String.valueOf(i), Toast.LENGTH_SHORT ).show();
-                        sendMessage= sendMessage.concat(" #" + String.valueOf(i));
-                        sendMessage= sendMessage.concat(" " +dt.getCommodity());
-                        sendMessage= sendMessage.concat(" " +dt.getPrice());
-                        sendMessage= sendMessage.concat(" " +dt.getArrived());
-                        sendMessage= sendMessage.concat(" " +dt.getRemained());
+                        sendMessage= sendMessage.concat("#" +dt.getCommodity());
+                        sendMessage= sendMessage.concat("#" +dt.getPrice());
+                        sendMessage= sendMessage.concat("#" +dt.getArrived());
+                        sendMessage= sendMessage.concat("#" +dt.getRemained());
 
 
                     }
                 }
 
-                Toast.makeText(MainActivity.this ,sendMessage, Toast.LENGTH_SHORT ).show();
-                sendSMS(add ,sendMessage);
+                forAddress(sendMessage.concat("#" + state), pincode);
 
             }
 
@@ -345,6 +397,33 @@ Double latitude,longitude;
 
         });
 
+
+
+
+    }
+
+    public void forAddress(final String sendmsg, String pin){
+
+
+        databaseproduct= FirebaseDatabase.getInstance().getReference().child("fpsaddress").child(pin).child("address");
+
+        databaseproduct.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot ) {
+
+
+                Toast.makeText(MainActivity.this ,sendmsg, Toast.LENGTH_SHORT ).show();
+                sendSMS(add ,sendmsg.concat("#" +dataSnapshot.getValue(String.class)));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+
+
+
+        });
     }
     private String formSMS(int msp,String address)
     {
