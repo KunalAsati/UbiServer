@@ -144,7 +144,7 @@ Double latitude,longitude;
                             Toast.LENGTH_LONG).show();
                 } else {
                     Toast.makeText(getApplicationContext(),
-                            "SMS faild, please try again.", Toast.LENGTH_LONG).show();
+                            "SMS failed, please try again.", Toast.LENGTH_LONG).show();
                     return;
                 }
             }
@@ -174,6 +174,10 @@ Double latitude,longitude;
                     fairPriceProcessing(message,sender);
 
                 }
+                else if(words[1].equalsIgnoreCase("ubiweather"))
+                {
+
+                }
                 else {
                     switch (words[2]) {
                         case "Gram":
@@ -190,7 +194,7 @@ Double latitude,longitude;
                             break;
                         default:
                             Log.d(TAG, "default executes because words[1]=" + words[1]);
-                            sendSMS(sender, "#ubi#error");
+                            sendSMS(sender, "#ubimsp#error");
                             break;
                     }
                     latitude = Double.parseDouble(words[3]);
