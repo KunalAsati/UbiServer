@@ -205,7 +205,7 @@ Double latitude,longitude;
                         case "Gram":
                             commodity = "Gram";
                             break;
-                        case "Paddy":
+                        case "Paddy"://commit check
                             commodity = "Paddy";
                             break;
                         case "Sugarcane":
