@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     Button sendBtn;
     EditText txtphoneNo;
     EditText txtMessage;
-    String pincode,state,phoneNo, message, msgnum, add, sendMessage, commodity, address, sms, cityField, updatedField, detailsField, currentTemperatureField, humidity_field, pressure_field, textWeather;
+    String pincode,state,phoneNo, message, msgnum, add, sendMessage, commodity, address, sms, cityField, updatedField, detailsField, currentTemperatureField, humidity_field, pressure_field, textWeather, notificationTitle, notificationBody;
     Spanned weatherIcon;
    // String ;
     long msg, tempamt;
@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     DatabaseReference mMSPRef = mRootRef.child("msp");
     DatabaseReference mPriceRef=mMSPRef.child("price");
     DatabaseReference mAddressRef=mMSPRef.child("address");
+    DatabaseReference mNotificationRef = mRootRef.child("notifications");
     DatabaseReference mRegionRef;
     DatabaseReference mCommodityRef;
     int msp, p;
@@ -148,7 +149,7 @@ Double latitude,longitude;
         String SENT = "SMS_SENT";
         String DELIVERED = "SMS_DELIVERED";
         SmsManager smsManager = SmsManager.getDefault();
-        ArrayList<String> parts = smsManager.divideMessage(message);
+        ArrayList<String> parts = smsManager.divideMessage(sms);
         PendingIntent sentPI = PendingIntent.getBroadcast(this, 0,
                 new Intent(SENT), 0);
 
@@ -194,6 +195,7 @@ Double latitude,longitude;
                 final String sender = intent.getStringExtra("sender");
                 String s = message;
                 if(!s.contains("ubi")){
+                    Log.d(TAG,"doesn't contain ubi");
                     return;
                 }
                 String[] words = s.split("#");
@@ -204,7 +206,7 @@ Double latitude,longitude;
                     words[i] = words[i].replaceAll("[^\\w]", "");
                     Log.d(TAG,"words["+i+"]="+words[i]);
                 }*/
-
+                Log.d(TAG,"split happens");
                 if(words[1].equalsIgnoreCase("ubimarket"))
                 {
 
@@ -212,6 +214,7 @@ Double latitude,longitude;
 
                 }
                 else if(words[1].equalsIgnoreCase("ubiweather")) {
+                    flag=0;
                     Log.d(TAG,"else if called");
                     latitude = Double.parseDouble(words[2]);
                     longitude = Double.parseDouble(words[3]);
@@ -222,6 +225,10 @@ Double latitude,longitude;
                             if(cityField==null) {
                                 Log.d(TAG, "cityField here is null");
                             }
+                            if(flag==1)
+                            {
+                                return;
+                            }
                             updatedField = weather_updatedOn;
                             detailsField = weather_description;
                             currentTemperatureField = weather_temperature;
@@ -231,6 +238,7 @@ Double latitude,longitude;
                             textWeather=weather_iconText;
                             sms=formSMS(cityField,updatedField,detailsField,currentTemperatureField,humidity_field,pressure_field,textWeather);
                             sendSMS(sender,sms);
+                            flag=1;
                         }
 
                     });
@@ -314,6 +322,35 @@ Double latitude,longitude;
                     //Log.d(TAG,sms);
                     Log.d(TAG, "before sending sms = " + sms);
                     //sendSMS(sender,sms);
+                }
+                else if(words[1].equalsIgnoreCase("ubinotifications"))
+                {
+                    mNotificationRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                                //  Log.d("xyzr22",commodity);
+                                Log.d(TAG, "this executes!");
+                                try {
+                                    notificationTitle = snapshot.getKey();
+                                } catch (Exception e) {
+                                    Log.d(TAG, e.toString());
+                                }
+                                Log.d(TAG, "no problem here");
+                                notificationBody = snapshot.getValue(String.class);
+                                Log.d(TAG, "body gets value " + notificationBody + "title gets value " + notificationTitle);
+                                sms=formSMS(notificationTitle,notificationBody);
+                                sendLongSMS("7507205926",sms);
+                                Log.d(TAG, "append works fine");
+
+                            }
+
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+                        }
+                    });
                 }
                 else{
                     sendSMS(sender, "#ubierror");
@@ -438,6 +475,14 @@ Double latitude,longitude;
         Log.d(TAG,"formSMS for weather called");
         String sms;
         sms="#ubiweather#"+cityField+"#"+detailsField+"#"+currentTemperatureField+"#"+humidity_field;
+        Log.d(TAG,"returned SMS = "+sms);
+        return sms;
+    }
+    private String formSMS(String title,String body)
+    {
+
+        String sms;
+        sms="#ubinotifications#"+title+"#"+body;
         Log.d(TAG,"returned SMS = "+sms);
         return sms;
     }
