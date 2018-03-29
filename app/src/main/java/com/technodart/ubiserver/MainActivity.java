@@ -1,6 +1,7 @@
 package com.technodart.ubiserver;
 
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +26,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.telephony.SmsManager;
 import android.text.Html;
 import android.text.Spanned;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -42,15 +44,20 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+
 public class MainActivity extends AppCompatActivity {
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS = 0;
     private static final String TAG="debugging";
     Button sendBtn;
     EditText txtphoneNo;
     EditText txtMessage;
-    String pincode,state,phoneNo, message, msgnum, add, sendMessage, commodity, address, sms, cityField, updatedField, detailsField, currentTemperatureField, humidity_field, pressure_field, textWeather, notificationTitle, notificationBody;
+    String pincode,state,phoneNo, message, msgnum, add, sendMessage, commodity, address, sms, cityField, updatedField, detailsField, currentTemperatureField, humidity_field, pressure_field, textWeather, notificationTitle, notificationBody, oo;
     Spanned weatherIcon;
-   // String ;
+    String AES="AES", s;
+
+    // String ;
     long msg, tempamt;
     DatabaseReference databaseproduct;
     PriceDetail dt;
@@ -68,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
 Double latitude,longitude;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        oo=GenerateRandomString.randomString(30);
+
         super.onCreate(savedInstanceState);
         p=0;
         setContentView(R.layout.activity_main);
@@ -193,7 +202,12 @@ Double latitude,longitude;
                 Log.d(TAG,"onReceive called");
                 final String message = intent.getStringExtra("message");
                 final String sender = intent.getStringExtra("sender");
-                String s = message;
+                try {
+                    s = decrpt(message, oo);
+                }catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
                 if(!s.contains("ubi")){
                     Log.d(TAG,"doesn't contain ubi");
                     return;
@@ -492,5 +506,23 @@ Double latitude,longitude;
         LocalBroadcastManager.getInstance(this).
                 registerReceiver(receiver, new IntentFilter("otp"));
         super.onResume();
+    }
+    private String decrpt(String out, String s) throws Exception {
+        SecretKeySpec key=generateKey(s);
+        Cipher c=Cipher.getInstance(AES);
+        c.init(Cipher.DECRYPT_MODE,key);
+        byte[] dval= Base64.decode(out,Base64.DEFAULT);
+        byte[] decval=c.doFinal(dval);
+        String  dvalue=new String(decval);
+        return dvalue;
+
+    }
+    private SecretKeySpec generateKey(String pas) throws Exception {
+        final MessageDigest digest=MessageDigest.getInstance("SHA-256");
+        byte[] bytes =pas.getBytes("UTF-8");
+        digest.update(bytes,0,bytes.length);
+        byte[] key=digest.digest();
+        SecretKeySpec secretKeySpec=new SecretKeySpec(key,"AES");
+        return secretKeySpec;
     }
 }
