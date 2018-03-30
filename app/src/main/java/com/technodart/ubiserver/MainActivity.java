@@ -75,8 +75,9 @@ public class MainActivity extends AppCompatActivity {
 Double latitude,longitude;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        oo=GenerateRandomString.randomString(30);
-
+        Log.d(TAG,"oo generated");
+      //  oo=GenerateRandomString.randomString(30);
+oo="ubi";
         super.onCreate(savedInstanceState);
         p=0;
         setContentView(R.layout.activity_main);
@@ -204,14 +205,17 @@ Double latitude,longitude;
                 final String sender = intent.getStringExtra("sender");
                 try {
                     s = decrpt(message, oo);
+                    Log.d(TAG,"s assigned "+s);
                 }catch(Exception e)
                 {
-                    e.printStackTrace();
+                    Log.d(TAG,"exception!!!!"+e.getMessage());
+
                 }
                 if(!s.contains("ubi")){
                     Log.d(TAG,"doesn't contain ubi");
                     return;
                 }
+
                 String[] words = s.split("#");
                /* for (int i = 0; i < words.length; i++) {
                     // You may want to check for a non-word character before blindly
@@ -224,7 +228,7 @@ Double latitude,longitude;
                 if(words[1].equalsIgnoreCase("ubimarket"))
                 {
 
-                    fairPriceProcessing(message,sender);
+                    fairPriceProcessing(s,sender);
 
                 }
                 else if(words[1].equalsIgnoreCase("ubiweather")) {
@@ -479,7 +483,7 @@ Double latitude,longitude;
     private String formSMS(int msp,String address)
     {
 
-        String sms;
+        String sms, intermediateSMS;
         sms="#ubimsp#"+msp+"#"+address;
         Log.d(TAG,"returned SMS = "+sms);
         return sms;
@@ -495,10 +499,19 @@ Double latitude,longitude;
     private String formSMS(String title,String body)
     {
 
-        String sms;
-        sms="#ubinotifications#"+title+"#"+body;
-        Log.d(TAG,"returned SMS = "+sms);
-        return sms;
+        String sms, intermediateSMS;
+        intermediateSMS="#ubinotifications#"+title+"#"+body;
+
+        try {
+            sms = encrpt(intermediateSMS, oo);
+            Log.d(TAG,"returned SMS = "+sms);
+            return sms;
+        }catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return "";
     }
 
     @Override
@@ -508,21 +521,37 @@ Double latitude,longitude;
         super.onResume();
     }
     private String decrpt(String out, String s) throws Exception {
+        Log.d(TAG,"decrypt called ");
         SecretKeySpec key=generateKey(s);
         Cipher c=Cipher.getInstance(AES);
         c.init(Cipher.DECRYPT_MODE,key);
         byte[] dval= Base64.decode(out,Base64.DEFAULT);
         byte[] decval=c.doFinal(dval);
         String  dvalue=new String(decval);
+        Log.d(TAG,"dvalue = "+dvalue);
         return dvalue;
 
     }
     private SecretKeySpec generateKey(String pas) throws Exception {
+        Log.d(TAG,"SecretKeySpec called with pas = "+pas);
         final MessageDigest digest=MessageDigest.getInstance("SHA-256");
+        Log.d(TAG,"MessageDigest 1");
         byte[] bytes =pas.getBytes("UTF-8");
+        Log.d(TAG,"bytes[]");
         digest.update(bytes,0,bytes.length);
+        Log.d(TAG,"digest");
         byte[] key=digest.digest();
+        Log.d(TAG,"key = "+key+" and algorithm = "+AES);
         SecretKeySpec secretKeySpec=new SecretKeySpec(key,"AES");
         return secretKeySpec;
+    }private String encrpt(String in,String p) throws Exception {
+        SecretKeySpec key= generateKey(p);
+        Cipher c=Cipher.getInstance(AES);
+        c.init(Cipher.ENCRYPT_MODE,key);
+        byte[] encv=c.doFinal(in.getBytes());
+        String eval= Base64.encodeToString(encv,Base64.DEFAULT);
+        return eval;
+
     }
+
 }
