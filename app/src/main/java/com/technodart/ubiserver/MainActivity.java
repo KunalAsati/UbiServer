@@ -55,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
     EditText txtMessage;
     String pincode,state,phoneNo, message, msgnum, add, sendMessage, commodity, address, sms, cityField, updatedField, detailsField, currentTemperatureField, humidity_field, pressure_field, textWeather, notificationTitle, notificationBody, oo;
     Spanned weatherIcon;
-    String AES="AES", s;
-
+    String AES="AES", s, addressFairPrice;
+Long childrenCount;
     // String ;
     long msg, tempamt;
     DatabaseReference databaseproduct;
@@ -71,6 +71,9 @@ public class MainActivity extends AppCompatActivity {
     DatabaseReference mNotificationRef = mRootRef.child("notifications");
     DatabaseReference mRegionRef;
     DatabaseReference mCommodityRef;
+  //  DatabaseReference mFairPriceRef=mRootRef.child("fpsaddress");
+ //   Geocoder geocoder = new Geocoder(this, Locale.ENGLISH);
+
     int msp, p;
 Double latitude,longitude;
     @Override
@@ -150,7 +153,8 @@ oo="ubi";
                 new Intent(this,Dummy.class), 0);
         SmsManager sms = SmsManager.getDefault();
 
-        sms.sendTextMessage(phoneNumber, null, message, pi, null);
+        sms.sendTextMessage("5554", null, message, pi, null);
+        Log.d(TAG,"success");
        // ++i;
 
     }
@@ -208,7 +212,7 @@ oo="ubi";
                     Log.d(TAG,"s assigned "+s);
                 }catch(Exception e)
                 {
-                    Log.d(TAG,"exception!!!!"+e.getMessage());
+                    Log.d(TAG,"exception!!!! "+e.getMessage());
 
                 }
                 if(!s.contains("ubi")){
@@ -227,7 +231,47 @@ oo="ubi";
                 Log.d(TAG,"split happens");
                 if(words[1].equalsIgnoreCase("ubimarket"))
                 {
+                    Log.d(TAG,"words[1] is "+words[1]);
+                    //flag=0;
+                    /*flag=0;
+                    latitude = Double.parseDouble(words[2]);
+                    longitude = Double.parseDouble(words[3]);
+                    //Geocoder for state and city
 
+
+                    try {
+                        List<Address> addresses = geocoder.getFromLocation(latitude,longitude, 1);
+
+                        if (addresses.size() > 0) {
+
+
+
+                            //     city.setText(addresses.get(0).getLocality());
+                            state = addresses.get(0).getAdminArea();
+                            pincode =addresses.get(0).getPostalCode();
+                            Log.d(TAG,pincode);
+                            //   mFarePriceReference=mRootRef.child("fareprice")
+                            //    addr.setText(addresses.get(0).getAddressLine(0));
+
+                        }
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    mFairPriceRef.child(pincode);
+                    mCommodityRef.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            addressFairPrice = dataSnapshot.getValue(String.class);
+                            Log.d(TAG, "addressFairaddressFairPrice);
+
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });*/
                     fairPriceProcessing(s,sender);
 
                 }
@@ -344,10 +388,15 @@ oo="ubi";
                 else if(words[1].equalsIgnoreCase("ubinotifications"))
                 {
                     mNotificationRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        int i=0;
                         @Override
                         public void onDataChange(DataSnapshot dataSnapshot) {
+                            childrenCount=dataSnapshot.getChildrenCount();
+
                             for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                                 //  Log.d("xyzr22",commodity);
+                                i++;
+                                Log.d(TAG,"i is "+i);
                                 Log.d(TAG, "this executes!");
                                 try {
                                     notificationTitle = snapshot.getKey();
@@ -357,8 +406,16 @@ oo="ubi";
                                 Log.d(TAG, "no problem here");
                                 notificationBody = snapshot.getValue(String.class);
                                 Log.d(TAG, "body gets value " + notificationBody + "title gets value " + notificationTitle);
-                                sms=formSMS(notificationTitle,notificationBody);
-                                sendLongSMS("7507205926",sms);
+                                if(i==1) {
+                                    formLongSMS(notificationTitle, notificationBody, childrenCount);
+                                    Log.d(TAG,"childrenCount i = "+i+" sms = "+sms);
+                                }
+                                else {
+                                    formLongSMS(notificationTitle, notificationBody);
+                                    Log.d(TAG,"other form is called sms = "+sms);
+                                }
+
+                                sendLongSMS("5554",sms);
                                 Log.d(TAG, "append works fine");
 
                             }
@@ -405,6 +462,8 @@ oo="ubi";
                 //     city.setText(addresses.get(0).getLocality());
                 state = addresses.get(0).getAdminArea();
                 pincode =addresses.get(0).getPostalCode();
+                Log.d(TAG,pincode);
+             //   mFarePriceReference=mRootRef.child("fareprice")
                 //    addr.setText(addresses.get(0).getAddressLine(0));
 
             }
@@ -413,7 +472,7 @@ oo="ubi";
             e.printStackTrace();
         }
 
-        Toast.makeText(this, pincode+state, Toast.LENGTH_SHORT).show();
+      //  Toast.makeText(this, pincode+state, Toast.LENGTH_SHORT).show();
         databaseproduct = FirebaseDatabase.getInstance().getReference().child("fareprice").child(state);
 
         sendMessage ="#ubimarket";
@@ -466,9 +525,17 @@ oo="ubi";
             @Override
             public void onDataChange(DataSnapshot dataSnapshot ) {
 
-
-                Toast.makeText(MainActivity.this ,sendmsg, Toast.LENGTH_SHORT ).show();
-                sendSMS(add ,sendmsg.concat("#" +dataSnapshot.getValue(String.class)));
+                Log.d(TAG,"onDataChange called");
+               // Toast.makeText(MainActivity.this ,sendmsg, Toast.LENGTH_SHORT ).show();
+                sendSMS("5554",sendmsg.concat("#"+dataSnapshot.getValue(String.class)));
+          //      Log.d(TAG,"addressFairPrice is : "+addressFairPrice);
+               /* if(addressFairPrice==null)
+                {
+                    addressFairPrice="address for pincode "+pincode+"not set.";
+                }*/
+                /*sendmsg.concat("#address");
+                Log.d(TAG,"sendmsg is "+sendmsg);
+                sendSMS(add ,sendmsg);*/
             }
 
             @Override
@@ -484,6 +551,7 @@ oo="ubi";
     {
 
         String sms, intermediateSMS;
+        Log.d(TAG,"ubimsp called");
         sms="#ubimsp#"+msp+"#"+address;
         Log.d(TAG,"returned SMS = "+sms);
         return sms;
@@ -496,22 +564,38 @@ oo="ubi";
         Log.d(TAG,"returned SMS = "+sms);
         return sms;
     }
-    private String formSMS(String title,String body)
+    private void formLongSMS(String title,String body)
     {
+        Log.d(TAG,"other form sms before concatenation = "+sms);
+        sms.concat("#"+title+"#"+body);
+        Log.d(TAG,"other form sms after concatenation = "+sms);
 
-        String sms, intermediateSMS;
-        intermediateSMS="#ubinotifications#"+title+"#"+body;
-
-        try {
-            sms = encrpt(intermediateSMS, oo);
+       /* try {
+          //  sms = encrpt(intermediateSMS, oo);
             Log.d(TAG,"returned SMS = "+sms);
             return sms;
         }catch(Exception e)
         {
             e.printStackTrace();
-        }
+        }*/
 
-        return "";
+        //return "";
+    }
+    private void formLongSMS(String title,String body,long childrenCount)
+    {
+
+        sms="#ubinotifications#"+childrenCount+"#"+title+"#"+body;
+
+       /* try {
+          //  sms = encrpt(intermediateSMS, oo);
+            Log.d(TAG,"returned SMS = "+sms);
+            return sms;
+        }catch(Exception e)
+        {
+            e.printStackTrace();
+        }*/
+
+        //return "";
     }
 
     @Override
@@ -544,7 +628,7 @@ oo="ubi";
         Log.d(TAG,"key = "+key+" and algorithm = "+AES);
         SecretKeySpec secretKeySpec=new SecretKeySpec(key,"AES");
         return secretKeySpec;
-    }private String encrpt(String in,String p) throws Exception {
+    }/*private String encrpt(String in,String p) throws Exception {
         SecretKeySpec key= generateKey(p);
         Cipher c=Cipher.getInstance(AES);
         c.init(Cipher.ENCRYPT_MODE,key);
@@ -552,6 +636,6 @@ oo="ubi";
         String eval= Base64.encodeToString(encv,Base64.DEFAULT);
         return eval;
 
-    }
+    }*/
 
 }
