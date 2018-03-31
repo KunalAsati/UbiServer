@@ -388,16 +388,16 @@ oo="ubi";
                 else if(words[1].equalsIgnoreCase("ubinotifications"))
                 {
                     mNotificationRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                        int i=0;
+                       // int i=0;
                         @Override
                         public void onDataChange(DataSnapshot dataSnapshot) {
                             childrenCount=dataSnapshot.getChildrenCount();
 
                             for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                                 //  Log.d("xyzr22",commodity);
-                                i++;
-                                Log.d(TAG,"i is "+i);
-                                Log.d(TAG, "this executes!");
+                               // i++;
+                               /* Log.d(TAG,"i is "+i);
+                                Log.d(TAG, "this executes!");*/
                                 try {
                                     notificationTitle = snapshot.getKey();
                                 } catch (Exception e) {
@@ -406,16 +406,9 @@ oo="ubi";
                                 Log.d(TAG, "no problem here");
                                 notificationBody = snapshot.getValue(String.class);
                                 Log.d(TAG, "body gets value " + notificationBody + "title gets value " + notificationTitle);
-                                if(i==1) {
-                                    formLongSMS(notificationTitle, notificationBody, childrenCount);
-                                    Log.d(TAG,"childrenCount i = "+i+" sms = "+sms);
-                                }
-                                else {
-                                    formLongSMS(notificationTitle, notificationBody);
-                                    Log.d(TAG,"other form is called sms = "+sms);
-                                }
+                               sms=formSMS(notificationTitle,notificationBody);
 
-                                sendLongSMS("5554",sms);
+                                sendSMS("5554",sms);
                                 Log.d(TAG, "append works fine");
 
                             }
@@ -553,6 +546,15 @@ oo="ubi";
         String sms, intermediateSMS;
         Log.d(TAG,"ubimsp called");
         sms="#ubimsp#"+msp+"#"+address;
+        Log.d(TAG,"returned SMS = "+sms);
+        return sms;
+    }
+    private String formSMS(String notificationTitle, String notificationBody)
+    {
+
+        String sms;
+        Log.d(TAG,"ubimsp called");
+        sms="#ubinotifications#"+notificationTitle+"#"+notificationBody;
         Log.d(TAG,"returned SMS = "+sms);
         return sms;
     }
